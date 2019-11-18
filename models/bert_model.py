@@ -5,7 +5,7 @@ import os
 import re
 import pandas as pd
 import datetime
-from models.bertutils import download_and_load_datasets, create_tokenizer_from_hub_module
+from models.utils import download_and_load_datasets, create_tokenizer_from_hub_module
 import bert.optimization
 import bert.run_classifier
 import bert.tokenization
@@ -19,7 +19,7 @@ class BERT():
         # These hyperparameters are copied from this colab notebook (https://colab.sandbox.google.com/github/tensorflow/tpu/blob/master/tools/colab/bert_finetuning_with_cloud_tpus.ipynb)
         self.BATCH_SIZE = 32
         self.LEARNING_RATE = 2e-5
-        self.NUM_TRAIN_EPOCHS = 3.0
+        self.NUM_TRAIN_EPOCHS = 100
         # Warmup is a period of time where hte learning rate
         # is small and gradually increases--usually helps training.
         self.WARMUP_PROPORTION = 0.1
@@ -38,6 +38,8 @@ class BERT():
         self.input_mask = tf.placeholder(tf.int32, [None, self.max_seq_length], name="input_mask")
         self.segment_ids = tf.placeholder(tf.int32, [None, self.max_seq_length], name="segment_ids")
         self.labels = tf.placeholder(tf.int32, [None], name= "labels")
+
+        self.version=0 #default version is zero
 
         self.create_model()
 
@@ -81,11 +83,15 @@ class BERT():
             # Convert labels into one-hot encoding
             one_hot_labels = tf.one_hot(self.labels, depth=self.num_labels, dtype=tf.float32)
 
-            self.predicted_labels = tf.squeeze(tf.argmax(self.log_probs, axis=-1, output_type=tf.int32), name="predictions")
+            self.predicted_labels = tf.squeeze(tf.argmax(self.log_probs, axis=-1, output_type=tf.int32), name="prediction")
 
             # If we're train/eval, compute loss between predicted and actual label
             per_example_loss = -tf.reduce_sum(one_hot_labels * self.log_probs, axis=-1)
             self.loss = tf.reduce_mean(per_example_loss, name="loss")
+            print(self.loss)
+            print(self.predicted_labels)
+
+        print(output_bias)
 
 
     def train(self, train_features):
@@ -107,14 +113,10 @@ class BERT():
 
 
                     train_features_batch =train_features[idx:idx+self.batch_size]
-
                     input_ids =[x.input_ids for x in train_features_batch]
-
                     input_mask =[x.input_mask for x in train_features_batch]
-
                     segment_ids =[x.segment_ids for x in train_features_batch]
                     labels = [x.label_id for x in train_features_batch]
-
 
                     feed_dict={ self.input_ids: input_ids,
                             self.segment_ids: segment_ids,
@@ -125,16 +127,19 @@ class BERT():
 
 
             print("saving the model")
-            self.export_model(sess, version=1)
+            self.export_model(sess, version=2)
 
         print("training completed saving data")
 
-    def inference(self, test_features):
+    def inference(self, test_features, version=0):
+
+        dirs=os.path.join(self.model_dir, str(version))
 
         with tf.Session(graph=tf.Graph()) as sess:
-            tf.saved_model.loader.load(sess, ["serve"], self.model_dir)
+            tf.saved_model.loader.load(sess, ["serve"], dirs)
 
             graph=tf.get_default_graph()
+
 
             input_ids = [x.input_ids for x in test_features]
             input_mask = [x.input_mask for x in test_features]
@@ -143,7 +148,7 @@ class BERT():
             self.input_ids = graph.get_tensor_by_name("input_ids:0")
             self.input_mask = graph.get_tensor_by_name("input_mask:0")
             self.segment_ids =graph.get_tensor_by_name("segment_ids:0")
-            self.predicted_labels=graph.get_tensor_by_name("predictions")
+            self.predicted_labels=graph.get_tensor_by_name("loss/predictions:0")
 
 
             dictionary = {self.input_ids: input_ids,
@@ -151,19 +156,12 @@ class BERT():
                          self.input_mask: input_mask }
 
             predicted_sentiment = sess.run(self.predicted_labels, feed_dict=dictionary)
-            #get the text from the labels ids
 
         return predicted_sentiment
 
-    def online_training(self,streaming_data):
-        #restore the model
-        #train
-        #save the model
-        return
 
     def export_model(self, session, version=0):
         """Exports the model so that it can used for batch predictions."""
-
 
         # session.run(tf.global_variables_initializer())
         # self.saver.restore(session, last_checkpoint)
@@ -190,21 +188,7 @@ class BERT():
                                                    tags=[tf.saved_model.tag_constants.SERVING],
                                                    signature_def_map=signature_map,
                                                    clear_devices=True)
-        model_builder.save(as_text=True)
-
-
-    def restore_model(self,version=0):
-
-        dirs=os.path.join(self.model_dir, str(version))
-        with tf.Session(graph=tf.Graph()) as sess:
-            tf.saved_model.loader.load(sess, ["serve"], self.model_dir)
-
-            graph=tf.get_default_graph()
-
-            for op in graph.get_operations():
-                print(op)
-
-            #predicted_sentiment= sess.run(self.predicted_labels, feed_dict=dict)
+        model_builder.save(as_text=False)  #to save as pb-text change this to true
 
     def retrain(self, train_features, version=0):
 
@@ -218,18 +202,20 @@ class BERT():
 
             graph=tf.get_default_graph()
 
+            #get the ops
             self.input_ids = graph.get_tensor_by_name("input_ids:0")
             self.input_mask = graph.get_tensor_by_name("input_mask:0")
             self.segment_ids =graph.get_tensor_by_name("segment_ids:0")
             self.labels =graph.get_tensor_by_name("labels:0")
-            self.loss = graph.get_tensor_by_name("loss:0")
+            self.loss = graph.get_tensor_by_name("loss/loss:0")
 
 
             train_op = bert.optimization.create_optimizer(
                 self.loss,self.LEARNING_RATE, num_train_steps, num_warmup_steps, use_tpu=False)
 
 
-
+            init=tf.global_variables_initializer()
+            sess.run(init)
 
             for epoch in range(0, int(self.NUM_TRAIN_EPOCHS)):
                 print(epoch)
@@ -253,14 +239,26 @@ class BERT():
 
 
             print("saving the model")
-            self.export_model(sess, versions=1)
+            self.export_model(sess, version=2)
 
         print("training completed saving data")
 
+    def restore_model(self, version=0):
 
+        dirs = os.path.join(self.model_dir, str(version))
+        with tf.Session(graph=tf.Graph()) as sess:
+            tf.saved_model.loader.load(sess, ["serve"], dirs)
+
+            graph = tf.get_default_graph()
+
+            for op in graph.get_operations():
+                print(op)
+
+            # predicted_sentiment= sess.run(self.predicted_labels, feed_dict=dict)
 
 if __name__ == '__main__':
     model = BERT()
+
 
     print("Tensorflow ")
 
@@ -295,6 +293,5 @@ if __name__ == '__main__':
 
     # Convert our train and test features to InputFeatures that BERT understands.
     train_features = bert.run_classifier.convert_examples_to_features(train_InputExamples, label_list, MAX_SEQ_LENGTH, tokenizer)
-    model.train(train_features)
-    #a= model.(train_features[0:0+model.batch_size])
-
+    a=model.retrain(train_features)
+    print(len(a))
