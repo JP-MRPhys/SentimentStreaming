@@ -1,3 +1,6 @@
 [submodule "bert"]
 	path = bert
 	url = https://github.com/google-research/bert
+[submodule "serving"]
+	path = serving
+	url = https://github.com/tensorflow/serving
