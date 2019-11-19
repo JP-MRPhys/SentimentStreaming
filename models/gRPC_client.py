@@ -53,11 +53,13 @@ if __name__ == '__main__':
                                                                         tokenizer)
 
 
-    data_features=train_features[0:10]
+    data_features=train_features[0:50]
 
     input_ids = [x.input_ids for x in data_features]
     input_mask = [x.input_mask for x in data_features]
     segment_ids = [x.segment_ids for x in data_features]
+
+    batch_size=len(input_ids)
 
     # Send request
     # See prediction_service.proto for gRPC request/response details.
@@ -65,11 +67,11 @@ if __name__ == '__main__':
     request.model_spec.name = 'bert'
     request.model_spec.signature_name = 'bert_predictions'
     request.inputs['input_ids'].CopyFrom(
-        tf.contrib.util.make_tensor_proto(input_ids, shape=[10, MAX_SEQ_LENGTH]))
+        tf.contrib.util.make_tensor_proto(input_ids, shape=[batch_size, MAX_SEQ_LENGTH]))
     request.inputs['input_mask'].CopyFrom(
-        tf.contrib.util.make_tensor_proto(input_mask, shape=[10, MAX_SEQ_LENGTH]))
+        tf.contrib.util.make_tensor_proto(input_mask, shape=[batch_size, MAX_SEQ_LENGTH]))
     request.inputs['segment_ids'].CopyFrom(
-        tf.contrib.util.make_tensor_proto(segment_ids, shape=[10, MAX_SEQ_LENGTH]))
+        tf.contrib.util.make_tensor_proto(segment_ids, shape=[batch_size, MAX_SEQ_LENGTH]))
     result = stub.Predict(request, 100.0)  # 10 secs timeout
 
     print(result)

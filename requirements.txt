@@ -11,3 +11,4 @@ beautifulsoup4==4.8.1
 grpc==0.3-19
 protobuf==3.10.0
 tensorflow-gpu=1.13.1
+tensorflow-serving-api==1.13.0
