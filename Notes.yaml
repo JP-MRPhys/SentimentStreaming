@@ -1,0 +1,8 @@
+Notes to install tensorflow serving dependencies
+
+https://medium.com/@noone7791/how-to-install-tensorflow-serving-load-a-saved-tf-model-and-connect-it-to-a-rest-api-in-ubuntu-48e2a27b8c2a
+
+Note TODO: how to get this containerised i.e. the client is containerised, then just need to clone the
+
+Details on how to run
+
