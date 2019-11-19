@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: bert-deployment
+spec:
+  template:
+    metadata:
+      labels:
+        app: bert-server
+    spec:
+      containers:
+      - name: bert-container
+        image: gcr.io/kubernetes-258108/bert
+        ports:
+        - containerPort: 8500
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    run: bert-service
+  name: bert-service
+spec:
+  ports:
+  - port: 8500
+    targetPort: 8500
+  selector:
+    app: bert-server
+  type: LoadBalancer
