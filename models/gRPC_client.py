@@ -19,16 +19,13 @@ print("Tokenizer created")
 if __name__ == '__main__':
 
     channel = grpc.insecure_channel(FLAGS.server)
-
     stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
-
 
 
     train_df, test_df = download_and_load_datasets()
 
     print("Download complete")
     train = train_df.sample(len(train_df) - 24000)
-
     print(train.head(5))
 
     DATA_COLUMN = 'sentence'
@@ -44,15 +41,11 @@ if __name__ == '__main__':
                                                                                    label=x[LABEL_COLUMN]), axis=1)
 
     print(train_InputExamples)
-
       # We'll set sequences to be at most 128 tokens long.
     MAX_SEQ_LENGTH = 128
 
       # Convert our train and test features to InputFeatures that BERT understands.
-    train_features = bert.run_classifier.convert_examples_to_features(train_InputExamples, label_list, MAX_SEQ_LENGTH,
-                                                                        tokenizer)
-
-
+    train_features = bert.run_classifier.convert_examples_to_features(train_InputExamples, label_list, MAX_SEQ_LENGTH, tokenizer)
     data_features=train_features[0:50]
 
     input_ids = [x.input_ids for x in data_features]
@@ -74,6 +67,5 @@ if __name__ == '__main__':
         tf.contrib.util.make_tensor_proto(segment_ids, shape=[batch_size, MAX_SEQ_LENGTH]))
     result = stub.Predict(request, 100.0)  # 10 secs timeout
 
-    print(result)
-
-
+    print(type(result))
+    outputs=result['predictated_labels'].numpy()

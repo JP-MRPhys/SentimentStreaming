@@ -1,7 +1,7 @@
 #import spacy as spacy
 from traits.trait_types import self
 from tweepy import OAuthHandler, Stream, StreamListener
-import tensorflow as tf
+
 import pandas as pd
 import json
 #import spacy
@@ -11,10 +11,12 @@ import re
 from bert import optimization, run_classifier, tokenization
 import redis
 import pickle
-#redis
 
+import tensorflow as tf
+import grpc
+from tensorflow_serving.apis import prediction_service_pb2_grpc
+from tensorflow_serving.apis import predict_pb2
 
-#redis=redis.Redis(host="127.0.0.1", port=6379)
 
 
 
@@ -32,11 +34,25 @@ remove_char=["!", "!", "@", "#", "$" ":",")", "." , ";" ,",","?", "&", "http", "
 REDIS_HOST="127.0.0.1"
 REDIS_HOST_PORT=6329
 
+BERT_SERVER_ADDRESS='bert_service'
 
 tf.app.flags.DEFINE_string('server', '35.232.105.219:8500', 'PredictionService host:port')
 FLAGS = tf.app.flags.FLAGS
+channel = grpc.insecure_channel(FLAGS.server)
+stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
+request = predict_pb2.PredictRequest()
+request.model_spec.name = 'bert'
+request.model_spec.signature_name = 'bert_predictions'
+
+def process_bert_results():
+    """
+    Tasks the results from bert services for sentiment analysis and provides out
+    :return: sentiments; [batch_size] sentiment per tweet
+
+    """
 
 
+#redis=redis.Redis(host="127.0.0.1", port=6379)
 def create_tokenizer_from_hub_module():
     """Get the vocab file and casing info from the Hub module."""
     with tf.Graph().as_default():
@@ -48,8 +64,6 @@ def create_tokenizer_from_hub_module():
 
     return tokenization.FullTokenizer(
         vocab_file=vocab_file, do_lower_case=do_lower_case)
-
-
 class StdOutListener(StreamListener):
     """ A listener handles tweets that are received from the stream.
     This is a basic listener that just prints received tweets to stdout.
@@ -141,41 +155,45 @@ class StdOutListener(StreamListener):
             train_features = run_classifier.convert_examples_to_features(train_InputExamples, label_list, MAX_SEQ_LENGTH, self.tokenizer)
             #self.tweets=[]
 
-        #d = nlp(a["text"])
-        #for token in d:
-        #    token.vector
+            input_ids = [x.input_ids for x in train_features]
+            input_mask = [x.input_mask for x in train_features]
+            segment_ids = [x.segment_ids for x in train_features]
+
+            batch_size = len(input_ids)
+
+            request.inputs['input_ids'].CopyFrom(
+                tf.contrib.util.make_tensor_proto(input_ids, shape=[batch_size, MAX_SEQ_LENGTH]))
+            request.inputs['input_mask'].CopyFrom(
+                tf.contrib.util.make_tensor_proto(input_mask, shape=[batch_size, MAX_SEQ_LENGTH]))
+            request.inputs['segment_ids'].CopyFrom(
+                tf.contrib.util.make_tensor_proto(segment_ids, shape=[batch_size, MAX_SEQ_LENGTH]))
+            result = stub.Predict(request, 100.0)  # 10 secs timeout
+
+            process_bert_results(result)
+            outputs = result['predictated_labels'].numpy()
+            train["sentiment"]=outputs
+
+            self.send_to_redis(train)
+
+            self.tweets=[]
 
         return
 
     def on_error(self, status):
         print(status)
 
-    def clean_tweet_old(self, tweet, keywords):
 
-        #this should be made non blocking
 
-        clean_tweet = " ".join([word for word in tweet.split()
-                                if word not in remove_char and '@' not in word and '<' not in word])
+    def send_to_redis(self, results_dataframe):
 
-        t = re.sub("[!@#$:).;,?&]", " ", clean_tweet)
+        results_json=results_dataframe.to_json(orient="index")
 
-        filters = re.findall(keywords, t, flags=re.IGNORECASE)
-        #change to lowercase
-        filters = map(str.lower, filters)
+        for results in results_json:
+            filter=results["filter"]
+            redis.publish(filter, results)
 
-        #remove duplicates
-        filters=list(dict.fromkeys(filters))
 
-        # TODO: filter words are not avaliable read the documentation to get all the tweets
-        if (filters):
-            print("tweet contains follow key words")
 
-            print(filters)
-            for filter in filters:
-                #redis.publish(filter,t)
-                print("published tweet" + t)
-
-        return
 
 if __name__ == '__main__':
 

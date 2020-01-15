@@ -1,7 +1,7 @@
-import bs4 as bs
+#import bs4 as bs
 import pickle
 import requests
-
+import re
 
 def save_sp500_tickers():
     resp = requests.get('http://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
@@ -19,4 +19,11 @@ def save_sp500_tickers():
 
 if __name__ == '__main__':
 
-    save_sp500_tickers()
+    # save_sp500_tickers()
+    shop="This is the list of the string"
+    regex =r'of|string'
+
+    results=re.findall(regex,shop)
+    print(results)
+
+
