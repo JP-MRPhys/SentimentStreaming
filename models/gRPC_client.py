@@ -3,13 +3,15 @@ import requests
 import tensorflow as tf
 from models.utils import download_and_load_datasets, create_tokenizer_from_hub_module
 import bert.run_classifier
+import numpy as np
+import time
 
 
 from tensorflow_serving.apis import predict_pb2 #TODO fux this find the right version for tensorflow 13.1.1
 from tensorflow_serving.apis import prediction_service_pb2_grpc
 
 
-tf.app.flags.DEFINE_string('server', '35.232.105.219:8500',
+tf.app.flags.DEFINE_string('server', '34.68.167.77:8500',
                            'PredictionService host:port')
 FLAGS = tf.app.flags.FLAGS
 tokenizer = create_tokenizer_from_hub_module()
@@ -54,6 +56,10 @@ if __name__ == '__main__':
 
     batch_size=len(input_ids)
 
+    print("Making request")
+
+    start = time.time()
+
     # Send request
     # See prediction_service.proto for gRPC request/response details.
     request = predict_pb2.PredictRequest()
@@ -67,5 +73,17 @@ if __name__ == '__main__':
         tf.contrib.util.make_tensor_proto(segment_ids, shape=[batch_size, MAX_SEQ_LENGTH]))
     result = stub.Predict(request, 100.0)  # 10 secs timeout
 
-    print(type(result))
-    outputs=result['predictated_labels'].numpy()
+    end = time.time()
+
+    print("Request out is in time: {}" .format(end-start))
+    print(result)
+
+    #ref: https://stackoverflow.com/questions/44785847/how-to-retrieve-float-val-from-a-predictresponse-object
+    outputs_tensor_proto = result.outputs["predictated_labels"]
+    shape = tf.TensorShape(outputs_tensor_proto.tensor_shape)
+    #outputs = tf.constant(outputs_tensor_proto.int_val, shape=shape)
+    outputs = np.array(outputs_tensor_proto.int_val).reshape(shape)
+
+    print(np.shape(outputs))
+
+    print(shape[0])

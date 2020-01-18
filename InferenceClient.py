@@ -11,13 +11,12 @@ import re
 from bert import optimization, run_classifier, tokenization
 import redis
 import pickle
+import time
 
 import tensorflow as tf
 import grpc
 from tensorflow_serving.apis import prediction_service_pb2_grpc
 from tensorflow_serving.apis import predict_pb2
-
-
 
 
 
@@ -31,12 +30,17 @@ access_key="99196167-O2u5HJ2WHhnHKCalrXZD5IlwrC3DbA5VofQ2lPJyq"
 access_token_secret="XLTHv1SWCKC2Q8QfAlF6ozToxULBdqcpbmZBcdAwYtXnB"
 BERT_MODEL_HUB = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
 remove_char=["!", "!", "@", "#", "$" ":",")", "." , ";" ,",","?", "&", "http", "<"]
-REDIS_HOST="127.0.0.1"
-REDIS_HOST_PORT=6329
 
-BERT_SERVER_ADDRESS='bert_service'
+#redis set up
+REDIS_HOST="redis"  #this is just redis service
+REDIS_HOST_PORT=6379
+redis=redis.Redis(host=REDIS_HOST, port=REDIS_HOST_PORT)
 
-tf.app.flags.DEFINE_string('server', '35.232.105.219:8500', 'PredictionService host:port')
+
+
+
+
+tf.app.flags.DEFINE_string('server', 'bert_service:8500', 'PredictionService host:port')
 FLAGS = tf.app.flags.FLAGS
 channel = grpc.insecure_channel(FLAGS.server)
 stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
@@ -52,7 +56,7 @@ def process_bert_results():
     """
 
 
-#redis=redis.Redis(host="127.0.0.1", port=6379)
+
 def create_tokenizer_from_hub_module():
     """Get the vocab file and casing info from the Hub module."""
     with tf.Graph().as_default():
@@ -114,11 +118,9 @@ class StdOutListener(StreamListener):
                       "returns": 1,
                       "filter": filter}
 
-                s=json.dumps(data)
-                #redis.publish(filter,s)
-                print(data)
+            return data
 
-        return tweet
+        return {"tweet": tweet, "returns": 1, "filter": "None"}
 
     def process_tweets(self, data):
 
@@ -128,12 +130,12 @@ class StdOutListener(StreamListener):
 
         t=tweet["text"]
         t=self.clean_tweet(t, self.keywords_re)
-        #print(t)
+        print(t)
 
-        data={LABEL_COLUMN:1,DATA_COLUMN:t}
+        #data={LABEL_COLUMN:1,DATA_COLUMN:t}
         label_list=[0,1]
 
-        self.tweets.append(data)
+        self.tweets.append(t)
         if len(self.tweets)>20:
 
             # TODO write to database (kafka or MongoBD)
@@ -161,6 +163,8 @@ class StdOutListener(StreamListener):
 
             batch_size = len(input_ids)
 
+            start = time.time()
+
             request.inputs['input_ids'].CopyFrom(
                 tf.contrib.util.make_tensor_proto(input_ids, shape=[batch_size, MAX_SEQ_LENGTH]))
             request.inputs['input_mask'].CopyFrom(
@@ -169,8 +173,16 @@ class StdOutListener(StreamListener):
                 tf.contrib.util.make_tensor_proto(segment_ids, shape=[batch_size, MAX_SEQ_LENGTH]))
             result = stub.Predict(request, 100.0)  # 10 secs timeout
 
-            process_bert_results(result)
-            outputs = result['predictated_labels'].numpy()
+            end = time.time()
+
+            # ref: https://stackoverflow.com/questions/44785847/how-to-retrieve-float-val-from-a-predictresponse-object
+            outputs_tensor_proto = result.outputs["predictated_labels"]
+            shape = tf.TensorShape(outputs_tensor_proto.tensor_shape)
+            outputs = np.array(outputs_tensor_proto.int_val).reshape(shape)
+
+            print(np.shape(outputs))
+            print("Request out is in time: {}".format(end - start))
+
             train["sentiment"]=outputs
 
             self.send_to_redis(train)
@@ -186,11 +198,20 @@ class StdOutListener(StreamListener):
 
     def send_to_redis(self, results_dataframe):
 
-        results_json=results_dataframe.to_json(orient="index")
+        results_json=results_dataframe.to_json(orient="records")
 
-        for results in results_json:
-            filter=results["filter"]
-            redis.publish(filter, results)
+        print(results_json)
+
+        for count in (json.loads(results_json)):
+             #data=json.loads(count)
+
+             if "filter" in count.keys():
+
+                filter=count["filter"]
+                print(filter)
+                redis.publish(filter, json.dumps(count))
+             else :
+                 redis.publish("stream", json.dumps(count))
 
 
 
