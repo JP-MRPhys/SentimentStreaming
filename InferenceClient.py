@@ -4,7 +4,7 @@ from tweepy import OAuthHandler, Stream, StreamListener
 
 import pandas as pd
 import json
-#import spacy
+
 import numpy as np
 import tensorflow_hub as hub
 import re
@@ -39,14 +39,14 @@ redis=redis.Redis(host=REDIS_HOST, port=REDIS_HOST_PORT)
 
 
 
-
-tf.app.flags.DEFINE_string('server', 'bert_service:8500', 'PredictionService host:port')
+tf.app.flags.DEFINE_string('server', 'bertservice:8500', 'PredictionService host:port')
 FLAGS = tf.app.flags.FLAGS
 channel = grpc.insecure_channel(FLAGS.server)
 stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
 request = predict_pb2.PredictRequest()
 request.model_spec.name = 'bert'
 request.model_spec.signature_name = 'bert_predictions'
+
 
 def process_bert_results():
     """
@@ -130,16 +130,23 @@ class StdOutListener(StreamListener):
 
         t=tweet["text"]
         t=self.clean_tweet(t, self.keywords_re)
-        print(t)
+        #print(t)
 
+
+            
         #data={LABEL_COLUMN:1,DATA_COLUMN:t}
         label_list=[0,1]
-
+            
         self.tweets.append(t)
         if len(self.tweets)>20:
 
+
             # TODO write to database (kafka or MongoBD)
             train = pd.DataFrame.from_dict(self.tweets)
+
+            redis.set("bert", "0001")
+
+
             #print(train[DATA_COLUMN])
             #print(train[LABEL_COLUMN])
             #train.apply(lambda x: print(x[DATA_COLUMN], x[LABEL_COLUMN]), axis=1)
@@ -161,6 +168,8 @@ class StdOutListener(StreamListener):
             input_mask = [x.input_mask for x in train_features]
             segment_ids = [x.segment_ids for x in train_features]
 
+            redis.set("bert", "test")
+
             batch_size = len(input_ids)
 
             start = time.time()
@@ -180,40 +189,31 @@ class StdOutListener(StreamListener):
             shape = tf.TensorShape(outputs_tensor_proto.tensor_shape)
             outputs = np.array(outputs_tensor_proto.int_val).reshape(shape)
 
-            print(np.shape(outputs))
-            print("Request out is in time: {}".format(end - start))
+            #print(np.shape(outputs))
+            #print("Request out is in time: {}".format(end - start))
 
             train["sentiment"]=outputs
-
             self.send_to_redis(train)
-
             self.tweets=[]
+
+            redis.set("bert", "000")
+
 
         return
 
     def on_error(self, status):
-        print(status)
-
+        #print(status)
+        return
 
 
     def send_to_redis(self, results_dataframe):
-
         results_json=results_dataframe.to_json(orient="records")
-
-        print(results_json)
-
         for count in (json.loads(results_json)):
-             #data=json.loads(count)
-
-             if "filter" in count.keys():
-
-                filter=count["filter"]
-                print(filter)
-                redis.publish(filter, json.dumps(count))
-             else :
-                 redis.publish("stream", json.dumps(count))
-
-
+             #if "filter" in count.keys():
+             #   filter=count["filter"]
+             #   redis.publish(filter, json.dumps(count))
+             #else :
+                redis.publish("stream", json.dumps(count))
 
 
 if __name__ == '__main__':
@@ -228,6 +228,7 @@ if __name__ == '__main__':
     auth = OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_key, access_token_secret)
 
+    redis.set("foo", "bar2")
     stream = Stream(auth, l)
     stream.filter(track=keywords, languages=["en"])
-
+    redis.set("foo", "bar4")

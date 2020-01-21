@@ -18,8 +18,8 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    run: bert-service
-  name: bert-service
+    run: bertservice
+  name: bertservice
 spec:
   ports:
   - port: 8500
