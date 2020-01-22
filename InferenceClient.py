@@ -18,18 +18,20 @@ import grpc
 from tensorflow_serving.apis import prediction_service_pb2_grpc
 from tensorflow_serving.apis import predict_pb2
 
+remove_char=["!", "!", "@", "#", "$" ":",")", "." , ";" ,",","?", "&", "http", "<"]
+
 
 
 DATA_COLUMN = 'tweet'
 LABEL_COLUMN = 'returns'
-
 #nlp = spacy.load('en_core_web_sm')
+
+#twitter keys
 consumer_key="2R4ARqSbMmjhtbv6NqL5tEvnr"
 consumer_secret="BMgPg0aVGZGzM3elH8pKpsUB4BY3bfrBVzwC9iQ8qqyJ9KevCB"
 access_key="99196167-O2u5HJ2WHhnHKCalrXZD5IlwrC3DbA5VofQ2lPJyq"
 access_token_secret="XLTHv1SWCKC2Q8QfAlF6ozToxULBdqcpbmZBcdAwYtXnB"
-BERT_MODEL_HUB = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
-remove_char=["!", "!", "@", "#", "$" ":",")", "." , ";" ,",","?", "&", "http", "<"]
+
 
 #redis set up
 REDIS_HOST="redis"  #this is just redis service
@@ -37,8 +39,8 @@ REDIS_HOST_PORT=6379
 redis=redis.Redis(host=REDIS_HOST, port=REDIS_HOST_PORT)
 
 
-
-
+#bert set up
+BERT_MODEL_HUB = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
 tf.app.flags.DEFINE_string('server', 'bertservice:8500', 'PredictionService host:port')
 FLAGS = tf.app.flags.FLAGS
 channel = grpc.insecure_channel(FLAGS.server)

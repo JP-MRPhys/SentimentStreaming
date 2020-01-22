@@ -12,12 +12,7 @@ from bert import optimization, run_classifier, tokenization
 import redis
 import pickle
 #redis
-
-
 #redis=redis.Redis(host="127.0.0.1", port=6379)
-
-
-
 
 DATA_COLUMN = 'tweet'
 LABEL_COLUMN = 'returns'
@@ -31,7 +26,6 @@ BERT_MODEL_HUB = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
 remove_char=["!", "!", "@", "#", "$" ":",")", "." , ";" ,",","?", "&", "http", "<"]
 REDIS_HOST="127.0.0.1"
 REDIS_HOST_PORT=6329
-
 
 tf.app.flags.DEFINE_string('server', '35.232.105.219:8500', 'PredictionService host:port')
 FLAGS = tf.app.flags.FLAGS
@@ -87,8 +81,6 @@ class StdOutListener(StreamListener):
         tweet = re.sub('^\s', '', tweet)  # remove extra whitespace
 
         filters = re.findall(keywords_re, tweet)
-
-
 
         # TODO: Many tweets contains do not contain filter words the documentation to get all the tweets or filter info:
         # TODO: This may be a paid feature via twitter
