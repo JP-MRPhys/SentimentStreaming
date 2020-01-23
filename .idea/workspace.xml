@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="132d7555-0826-4bc7-8479-cc9e3fbfb7b4" name="Default" comment="">
+    <list default="true" id="132d7555-0826-4bc7-8479-cc9e3fbfb7b4" name="Default" comment="Adding a subscriber">
+      <change afterPath="$PROJECT_DIR$/config.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bert" beforeDir="false" afterPath="$PROJECT_DIR$/bert" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/k8s/bertinference.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/k8s/bertinference.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/k8s/redis_pvc.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/k8s/redis_pvc.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -30,8 +36,8 @@
       <file leaf-file-name="bertinference.yaml" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/k8s/bertinference.yaml">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="315">
-              <caret line="21" column="32" lean-forward="true" selection-start-line="21" selection-start-column="32" selection-end-line="21" selection-end-column="32" />
+            <state relative-caret-position="330">
+              <caret line="22" lean-forward="true" selection-start-line="22" selection-end-line="22" />
             </state>
           </provider>
         </entry>
@@ -85,9 +91,9 @@
         <option value="$PROJECT_DIR$/data.py" />
         <option value="$PROJECT_DIR$/config.py" />
         <option value="$PROJECT_DIR$/scapy.py" />
-        <option value="$PROJECT_DIR$/k8s/bertinference.yaml" />
         <option value="$PROJECT_DIR$/InferenceClient.py" />
         <option value="$PROJECT_DIR$/subscribe.py" />
+        <option value="$PROJECT_DIR$/k8s/bertinference.yaml" />
       </list>
     </option>
   </component>
@@ -109,11 +115,6 @@
             <path>
               <item name="SentimentStreaming" type="b2602c69:ProjectViewProjectNode" />
               <item name="SentimentStreaming" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="SentimentStreaming" type="b2602c69:ProjectViewProjectNode" />
-              <item name="SentimentStreaming" type="462c0819:PsiDirectoryNode" />
-              <item name="serving" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -339,7 +340,14 @@
       <option name="project" value="LOCAL" />
       <updated>1579711888227</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="Adding a subscriber">
+      <created>1579712105193</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1579712105193</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TodoView" selected-index="4">
@@ -358,7 +366,7 @@
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.33442622" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.329718" />
       <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.50054646" side_tool="true" weight="0.50767756" />
-      <window_info anchor="bottom" id="Version Control" order="7" visible="true" weight="0.32917467" />
+      <window_info anchor="bottom" id="Version Control" order="7" weight="0.32917467" />
       <window_info anchor="bottom" id="Python Console" order="7" weight="0.329718" />
       <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49945354" weight="0.50767756" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -376,6 +384,16 @@
   </component>
   <component name="UnknownFeatures">
     <option featureType="com.intellij.fileTypeFactory" implementationName="requirements.txt" />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ORDER">
+      <list>
+        <option value="0" />
+        <option value="2" />
+        <option value="3" />
+        <option value="1" />
+      </list>
+    </option>
   </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
@@ -475,6 +493,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="405">
           <caret line="27" lean-forward="true" selection-start-line="27" selection-end-line="27" />
+          <folding>
+            <element signature="e#646#684#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -489,6 +510,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="240">
           <caret line="67" selection-start-line="67" selection-end-line="67" />
+          <folding>
+            <element signature="e#0#44#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -691,8 +715,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/k8s/bertinference.yaml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="315">
-          <caret line="21" column="32" lean-forward="true" selection-start-line="21" selection-start-column="32" selection-end-line="21" selection-end-column="32" />
+        <state relative-caret-position="330">
+          <caret line="22" lean-forward="true" selection-start-line="22" selection-end-line="22" />
         </state>
       </provider>
     </entry>
