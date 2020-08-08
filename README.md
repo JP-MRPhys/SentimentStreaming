@@ -5,7 +5,7 @@
 #### Technologies employed: 
 
 
-1. Fine Tuning open-sources BERT (Tensorflow): Containerised 
+1. Fine Tuning open-sourced BERT (Tensorflow): Containerised 
 
 2. IEX and Twitter streaming data feeds: Redis : pub/sub Containerised
 
