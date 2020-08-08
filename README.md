@@ -13,4 +13,5 @@ IEX and Twitter streaming data feeds: Redis : pub/sub Containerised
 
 Docker and Kubernetes:  Container and Orchestrator 
 
-![alt text] (https://miro.medium.com/max/576/1*gKm463y60_C2-3WfgFVitw.png)
+![image](https://user-images.githubusercontent.com/10104388/89708001-458fc700-d96b-11ea-9c6b-ac2c605c0b25.png)
+
